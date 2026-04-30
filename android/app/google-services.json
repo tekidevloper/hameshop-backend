@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "75805284465",
+    "project_id": "hameshop-f252a",
+    "storage_bucket": "hameshop-f252a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:75805284465:android:6fb7abccb77f68cdcfe3d0",
+        "android_client_info": {
+          "package_name": "com.example.hame_shop"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBTBM7b-LlHLsDOJZptUknz13XUAw4blx8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
