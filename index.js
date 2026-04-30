@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const mongoose = require('mongoose');
 const connectDB = require('./config/database');
 const authRoutes = require('./routes/authRoutes');
 const apiRoutes = require('./routes/apiRoutes');
@@ -26,8 +27,14 @@ app.use((req, res, next) => {
   next();
 });
 
-// Connect to Database
-connectDB();
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'ok', 
+    uptime: process.uptime(),
+    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+  });
+});
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -37,6 +44,12 @@ const PORT = process.env.PORT || 5000;
 
 const seedData = async () => {
   try {
+    // Check if connected before seeding
+    if (mongoose.connection.readyState !== 1) {
+      console.log('Waiting for MongoDB connection before seeding...');
+      return; 
+    }
+
     const userCount = await User.countDocuments();
     if (userCount === 0) {
       await User.create({
@@ -117,11 +130,50 @@ const seedData = async () => {
 };
 
 const startServer = async () => {
-  await seedData();
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on http://0.0.0.0:${PORT}`);
-    console.log('Body parser limit set to 50mb');
-  });
+  try {
+    // 1. Start the web server FIRST to satisfy Render's port binding check
+    const server = app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Server running on http://0.0.0.0:${PORT}`);
+      console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    });
+
+    // 2. Connect to database in the background
+    console.log('Connecting to MongoDB...');
+    connectDB().then(async () => {
+        // 3. Run seeding once connected
+        if (mongoose.connection.readyState === 1) {
+          await seedData();
+        }
+    }).catch(err => {
+        console.error('Initial MongoDB connection failed:', err.message);
+    });
+
+    // Handle process termination
+    process.on('SIGTERM', () => {
+      console.log('SIGTERM signal received: closing HTTP server');
+      server.close(() => {
+        console.log('HTTP server closed');
+        mongoose.connection.close(false, () => {
+          console.log('MongoDB connection closed');
+          process.exit(0);
+        });
+      });
+    });
+
+  } catch (error) {
+    console.error('Critical failure during startup:', error);
+    process.exit(1);
+  }
 };
+
+// Global error handlers for unhandled rejections/exceptions
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  process.exit(1);
+});
 
 startServer();

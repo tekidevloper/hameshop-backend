@@ -22,7 +22,11 @@ const register = async (req, res) => {
             }
         });
     } catch (error) {
-        res.status(400).json({ error: error.message });
+        if (error.code === 11000) {
+            res.status(400).json({ error: 'Email is already in use' });
+        } else {
+            res.status(400).json({ error: error.message });
+        }
     }
 };
 
