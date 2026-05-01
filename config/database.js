@@ -1,24 +1,27 @@
-const mongoose = require('mongoose');
+const { Sequelize } = require('sequelize');
+
+const databaseUrl = process.env.DATABASE_URL || 'postgresql://localhost:5432/hame_shop';
+
+const sequelize = new Sequelize(databaseUrl, {
+  dialect: 'postgres',
+  logging: false,
+  dialectOptions: {
+    ssl: {
+      require: true,
+      rejectUnauthorized: false // Required for Render
+    }
+  }
+});
 
 const connectDB = async () => {
   try {
-    const mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/hame_shop';
-    // Log URI without sensitive info
-    const sanitizedUri = mongoUri.includes('@') 
-        ? mongoUri.split('@')[1] 
-        : mongoUri;
-    console.log(`Attempting to connect to MongoDB: ${sanitizedUri}`);
-    
-    const conn = await mongoose.connect(mongoUri, {
-        serverSelectionTimeoutMS: 5000, 
-    });
-    
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
-    return conn;
+    await sequelize.authenticate();
+    console.log('PostgreSQL Connected via Sequelize');
+    return sequelize;
   } catch (error) {
-    console.error(`MongoDB Connection Error: ${error.message}`);
+    console.error('PostgreSQL Connection Error:', error.message);
     throw error;
   }
 };
 
-module.exports = connectDB;
+module.exports = { sequelize, connectDB };

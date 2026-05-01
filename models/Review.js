@@ -1,41 +1,38 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
 
-const reviewSchema = new mongoose.Schema({
+const Review = sequelize.define('Review', {
+    id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true
+    },
     rating: {
-        type: Number,
-        required: true,
-        min: 1,
-        max: 5,
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        validate: {
+            min: 1,
+            max: 5
+        }
     },
     comment: {
-        type: String,
-        required: true,
+        type: DataTypes.TEXT,
+        allowNull: false,
     },
     userId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true,
+        type: DataTypes.UUID,
+        allowNull: false,
     },
     productId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Product',
-        required: true,
+        type: DataTypes.UUID,
+        allowNull: false,
     },
     userName: {
-        type: String,
-        required: true,
+        type: DataTypes.STRING,
+        allowNull: false,
     }
 }, {
     timestamps: true
 });
 
-// Add 'id' virtual for frontend compatibility
-reviewSchema.virtual('id').get(function () {
-    return this._id.toHexString();
-});
-
-reviewSchema.set('toJSON', {
-    virtuals: true
-});
-
-module.exports = mongoose.model('Review', reviewSchema);
+module.exports = Review;

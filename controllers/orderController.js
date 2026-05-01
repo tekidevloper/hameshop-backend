@@ -4,15 +4,16 @@ const getOrders = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 20;
-        const skip = (page - 1) * limit;
+        const offset = (page - 1) * limit;
 
-        const query = req.user.role === 'admin' ? {} : { userId: req.user.id };
+        const whereClause = req.user.role === 'admin' ? {} : { userId: req.user.id };
 
-        const total = await Order.countDocuments(query);
-        const orders = await Order.find(query)
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limit);
+        const { count: total, rows: orders } = await Order.findAndCountAll({
+            where: whereClause,
+            order: [['createdAt', 'DESC']],
+            offset,
+            limit
+        });
 
         res.json({
             orders,
@@ -46,8 +47,10 @@ const createOrder = async (req, res) => {
 
 const updateOrderStatus = async (req, res) => {
     try {
-        const order = await Order.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const order = await Order.findByPk(req.params.id);
         if (!order) return res.status(404).json({ error: 'Order not found' });
+        
+        await order.update(req.body);
         res.json(order);
     } catch (error) {
         res.status(400).json({ error: error.message });

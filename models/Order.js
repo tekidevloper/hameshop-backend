@@ -1,64 +1,53 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
 
-const orderSchema = new mongoose.Schema({
+const Order = sequelize.define('Order', {
+    id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true
+    },
     userId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true,
+        type: DataTypes.UUID,
+        allowNull: false,
     },
     customerName: {
-        type: String,
-        required: true,
+        type: DataTypes.STRING,
+        allowNull: false,
     },
     customerEmail: {
-        type: String,
-        required: true,
+        type: DataTypes.STRING,
+        allowNull: false,
     },
     totalAmount: {
-        type: Number,
-        required: true,
+        type: DataTypes.FLOAT,
+        allowNull: false,
     },
     status: {
-        type: String,
-        enum: ['Pending', 'Shipped', 'Delivered', 'Cancelled'],
-        default: 'Pending',
+        type: DataTypes.ENUM('Pending', 'Shipped', 'Delivered', 'Cancelled'),
+        defaultValue: 'Pending',
     },
     paymentStatus: {
-        type: String,
-        enum: ['Paid', 'Unpaid'],
-        default: 'Unpaid',
+        type: DataTypes.ENUM('Paid', 'Unpaid'),
+        defaultValue: 'Unpaid',
     },
     items: {
-        type: Array, // Stores array of items
-        required: true,
+        type: DataTypes.JSONB,
+        allowNull: false,
     },
     shippingAddress: {
-        fullName: String,
-        phone: String,
-        street: String,
-        city: String,
-        region: String,
-        postalCode: String
+        type: DataTypes.JSONB,
     },
     phoneNumber: {
-        type: String
+        type: DataTypes.STRING
     }
 }, {
-    timestamps: true
+    timestamps: true,
+    indexes: [
+        { fields: ['userId'] },
+        { fields: ['status'] },
+        { fields: ['createdAt'] }
+    ]
 });
 
-// Indexes for performance
-orderSchema.index({ userId: 1 });
-orderSchema.index({ status: 1 });
-orderSchema.index({ createdAt: -1 });
-
-// Add 'id' virtual for frontend compatibility
-orderSchema.virtual('id').get(function () {
-    return this._id.toHexString();
-});
-
-orderSchema.set('toJSON', {
-    virtuals: true
-});
-
-module.exports = mongoose.model('Order', orderSchema);
+module.exports = Order;

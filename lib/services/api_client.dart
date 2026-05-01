@@ -18,14 +18,18 @@ class ApiClient {
 
   // ===================================================================
   // SERVER CONFIG
-  // Local development server - phone must be on the same WiFi network.
-  // Change this IP to your machine's local IP if it changes.
   // ===================================================================
-  static const String _baseUrl = 'https://hameshop-backend-8.onrender.com/api';
+  // Toggle this to switch between local and remote
+  static const bool _useLocalBackend = false; 
+  
+  static const String _remoteUrl = 'https://hameshop-backend-8.onrender.com/api';
+  static const String _localUrl = kIsWeb ? 'http://localhost:5000/api' : 'http://10.198.69.82:5000/api';
+  
+  static String get baseUrl => _useLocalBackend ? _localUrl : _remoteUrl;
 
   ApiClient._internal() {
     _dio = Dio(BaseOptions(
-      baseUrl: _baseUrl,
+      baseUrl: baseUrl,
       connectTimeout: const Duration(seconds: 120),
       receiveTimeout: const Duration(seconds: 120),
     ));
@@ -74,7 +78,10 @@ class ApiClient {
                               e.type == DioExceptionType.connectionError ||
                               e.type == DioExceptionType.unknown;
 
-        if (isNetworkError || e.response?.statusCode == 503 || e.response?.statusCode == 502) {
+        if (isNetworkError || 
+            e.response?.statusCode == 503 || 
+            e.response?.statusCode == 502 || 
+            e.response?.statusCode == 500) {
            int retries = e.requestOptions.extra['retries'] ?? 0;
            if (retries < 5) { // Increased to 5 retries
              debugPrint('Server might be sleeping or connecting. Retrying... (Attempt ${retries + 1})');

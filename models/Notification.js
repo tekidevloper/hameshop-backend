@@ -1,38 +1,34 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
 
-const notificationSchema = new mongoose.Schema({
+const Notification = sequelize.define('Notification', {
+    id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true
+    },
     title: {
-        type: String,
-        required: true,
+        type: DataTypes.STRING,
+        allowNull: false,
     },
     message: {
-        type: String,
-        required: true,
+        type: DataTypes.TEXT,
+        allowNull: false,
     },
     type: {
-        type: String,
-        default: 'system',
+        type: DataTypes.STRING,
+        defaultValue: 'system',
     },
     isRead: {
-        type: Boolean,
-        default: false,
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
     },
     userId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true,
+        type: DataTypes.UUID,
+        allowNull: false,
     }
 }, {
     timestamps: true
 });
 
-// Add 'id' virtual for frontend compatibility
-notificationSchema.virtual('id').get(function () {
-    return this._id.toHexString();
-});
-
-notificationSchema.set('toJSON', {
-    virtuals: true
-});
-
-module.exports = mongoose.model('Notification', notificationSchema);
+module.exports = Notification;

@@ -3,7 +3,10 @@ const Notification = require('../models/Notification');
 const getUserNotifications = async (req, res) => {
     try {
         const userId = req.user.id;
-        const notifications = await Notification.find({ userId }).sort({ createdAt: -1 });
+        const notifications = await Notification.findAll({ 
+            where: { userId },
+            order: [['createdAt', 'DESC']]
+        });
         res.json(notifications);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -13,7 +16,7 @@ const getUserNotifications = async (req, res) => {
 const markAsRead = async (req, res) => {
     try {
         const { id } = req.params;
-        const notification = await Notification.findById(id);
+        const notification = await Notification.findByPk(id);
 
         if (!notification) {
             return res.status(404).json({ error: 'Notification not found' });

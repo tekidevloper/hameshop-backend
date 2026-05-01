@@ -1,54 +1,50 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
 
-const productSchema = new mongoose.Schema({
+const Product = sequelize.define('Product', {
+    id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true
+    },
     name: {
-        type: String,
-        required: true,
+        type: DataTypes.STRING,
+        allowNull: false,
     },
     description: {
-        type: String,
-        required: true,
+        type: DataTypes.TEXT,
+        allowNull: false,
     },
     price: {
-        type: Number,
-        required: true,
+        type: DataTypes.FLOAT,
+        allowNull: false,
     },
     imageUrl: {
-        type: String,
-        required: true,
+        type: DataTypes.STRING,
+        allowNull: false,
     },
     category: {
-        type: String,
-        required: true,
+        type: DataTypes.STRING,
+        allowNull: false,
     },
     isRecommended: {
-        type: Boolean,
-        default: false,
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
     },
     rating: {
-        type: Number,
-        default: 0,
+        type: DataTypes.FLOAT,
+        defaultValue: 0,
     },
     reviewCount: {
-        type: Number,
-        default: 0,
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
     }
 }, {
-    timestamps: true
+    timestamps: true,
+    indexes: [
+        { fields: ['category'] },
+        { fields: ['isRecommended'] }
+    ]
 });
 
-// Indexes for performance
-productSchema.index({ category: 1 });
-productSchema.index({ isRecommended: -1 });
-productSchema.index({ name: 'text', description: 'text' }); // Search optimization
-
-// Add 'id' virtual for frontend compatibility
-productSchema.virtual('id').get(function () {
-    return this._id.toHexString();
-});
-
-productSchema.set('toJSON', {
-    virtuals: true
-});
-
-module.exports = mongoose.model('Product', productSchema);
+module.exports = Product;

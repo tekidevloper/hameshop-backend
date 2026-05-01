@@ -1,19 +1,25 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const mongoose = require('mongoose');
-const connectDB = require('./config/database');
+const { sequelize, connectDB } = require('./config/database');
 const authRoutes = require('./routes/authRoutes');
 const apiRoutes = require('./routes/apiRoutes');
 
-// Models (to ensure they are registered)
+// Models
 const User = require('./models/User');
 const Product = require('./models/Product');
 const Order = require('./models/Order');
 const Review = require('./models/Review');
-require('./models/Request');
+const Request = require('./models/Request');
 const Notification = require('./models/Notification');
 const Banner = require('./models/Banner');
+
+// Associations
+Order.belongsTo(User, { foreignKey: 'userId' });
+Review.belongsTo(User, { foreignKey: 'userId' });
+Review.belongsTo(Product, { foreignKey: 'productId' });
+Request.belongsTo(User, { foreignKey: 'userId' });
+Notification.belongsTo(User, { foreignKey: 'userId' });
 
 const app = express();
 
@@ -28,11 +34,19 @@ app.use((req, res, next) => {
 });
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+app.get('/health', async (req, res) => {
+  let dbStatus = 'disconnected';
+  try {
+    await sequelize.authenticate();
+    dbStatus = 'connected';
+  } catch (err) {
+    dbStatus = 'error';
+  }
+
   res.status(200).json({ 
     status: 'ok', 
     uptime: process.uptime(),
-    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+    database: dbStatus
   });
 });
 
@@ -44,13 +58,7 @@ const PORT = process.env.PORT || 5000;
 
 const seedData = async () => {
   try {
-    // Check if connected before seeding
-    if (mongoose.connection.readyState !== 1) {
-      console.log('Waiting for MongoDB connection before seeding...');
-      return; 
-    }
-
-    const userCount = await User.countDocuments();
+    const userCount = await User.count();
     if (userCount === 0) {
       await User.create({
         name: 'Hamee Asdsach',
@@ -62,9 +70,9 @@ const seedData = async () => {
       console.log('Admin user seeded');
     }
 
-    const productCount = await Product.countDocuments();
+    const productCount = await Product.count();
     if (productCount === 0) {
-      await Product.insertMany([
+      await Product.bulkCreate([
         {
           name: 'Smart Watch Pro',
           description: 'Advanced health tracking and notifications.',
@@ -131,32 +139,27 @@ const seedData = async () => {
 
 const startServer = async () => {
   try {
-    // 1. Start the web server FIRST to satisfy Render's port binding check
     const server = app.listen(PORT, '0.0.0.0', () => {
       console.log(`Server running on http://0.0.0.0:${PORT}`);
-      console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
     });
 
-    // 2. Connect to database in the background
-    console.log('Connecting to MongoDB...');
-    connectDB().then(async () => {
-        // 3. Run seeding once connected
-        if (mongoose.connection.readyState === 1) {
-          await seedData();
-        }
-    }).catch(err => {
-        console.error('Initial MongoDB connection failed:', err.message);
-    });
+    console.log('Connecting to PostgreSQL...');
+    await connectDB();
+    
+    // Sync models
+    console.log('Syncing database models...');
+    await sequelize.sync({ alter: true });
+    console.log('Database synced');
 
-    // Handle process termination
+    await seedData();
+
     process.on('SIGTERM', () => {
       console.log('SIGTERM signal received: closing HTTP server');
-      server.close(() => {
+      server.close(async () => {
         console.log('HTTP server closed');
-        mongoose.connection.close(false, () => {
-          console.log('MongoDB connection closed');
-          process.exit(0);
-        });
+        await sequelize.close();
+        console.log('PostgreSQL connection closed');
+        process.exit(0);
       });
     });
 
@@ -166,7 +169,6 @@ const startServer = async () => {
   }
 };
 
-// Global error handlers for unhandled rejections/exceptions
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });

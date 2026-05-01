@@ -4,7 +4,10 @@ const Product = require('../models/Product');
 const getProductReviews = async (req, res) => {
     try {
         const { productId } = req.params;
-        const reviews = await Review.find({ productId }).sort({ createdAt: -1 });
+        const reviews = await Review.findAll({ 
+            where: { productId },
+            order: [['createdAt', 'DESC']]
+        });
         res.json(reviews);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -25,9 +28,9 @@ const createReview = async (req, res) => {
         });
 
         // Update product rating and review count
-        const product = await Product.findById(productId);
+        const product = await Product.findByPk(productId);
         if (product) {
-            const reviews = await Review.find({ productId });
+            const reviews = await Review.findAll({ where: { productId } });
             const avgRating = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
 
             product.rating = parseFloat(avgRating.toFixed(1));

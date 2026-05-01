@@ -1,43 +1,37 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
 
-const requestSchema = new mongoose.Schema({
+const Request = sequelize.define('Request', {
+    id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true
+    },
     userId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true,
+        type: DataTypes.UUID,
+        allowNull: false,
     },
     title: {
-        type: String,
-        required: true,
+        type: DataTypes.STRING,
+        allowNull: false,
     },
     message: {
-        type: String,
-        required: true,
+        type: DataTypes.TEXT,
+        allowNull: false,
     },
     category: {
-        type: String,
-        enum: ['Support', 'Product Inquiry', 'Order Issue', 'Other'],
-        default: 'Support',
+        type: DataTypes.ENUM('Support', 'Product Inquiry', 'Order Issue', 'Other'),
+        defaultValue: 'Support',
     },
     status: {
-        type: String,
-        enum: ['Open', 'Responded', 'Closed'],
-        default: 'Open',
+        type: DataTypes.ENUM('Open', 'Responded', 'Closed'),
+        defaultValue: 'Open',
     },
     adminResponse: {
-        type: String,
+        type: DataTypes.TEXT,
     }
 }, {
     timestamps: true
 });
 
-// Add 'id' virtual for frontend compatibility
-requestSchema.virtual('id').get(function () {
-    return this._id.toHexString();
-});
-
-requestSchema.set('toJSON', {
-    virtuals: true
-});
-
-module.exports = mongoose.model('Request', requestSchema);
+module.exports = Request;

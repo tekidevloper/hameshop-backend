@@ -1,26 +1,30 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
 
-const bannerSchema = new mongoose.Schema({
+const Banner = sequelize.define('Banner', {
+    id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true
+    },
     imageUrl: {
-        type: String,
-        required: true,
+        type: DataTypes.STRING,
+        allowNull: false,
     },
     title: {
-        type: String,
-        required: false,
+        type: DataTypes.STRING,
+        allowNull: true,
     },
     isActive: {
-        type: Boolean,
-        default: true,
+        type: DataTypes.BOOLEAN,
+        defaultValue: true,
     },
     order: {
-        type: Number,
-        default: 0,
-    },
-    createdAt: {
-        type: Date,
-        default: Date.now,
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
     }
+}, {
+    timestamps: true
 });
 
-module.exports = mongoose.model('Banner', bannerSchema);
+module.exports = Banner;

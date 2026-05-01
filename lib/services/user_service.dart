@@ -17,29 +17,42 @@ class UserService {
   final ValueNotifier<bool> isLoading = ValueNotifier<bool>(true);
 
   Future<void> init() async {
-    final prefs = await SharedPreferences.getInstance();
-    final isLoggedIn = prefs.getBool('is_logged_in') ?? false;
-    
-    if (isLoggedIn) {
-      final token = await ApiClient().getToken();
-      if (token == null) {
-        // Token missing but logged in flag set - inconsistencies!
-        await logout();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final isLoggedIn = prefs.getBool('is_logged_in') ?? false;
+      
+      if (isLoggedIn) {
+        final token = await ApiClient().getToken();
+        if (token == null) {
+          debugPrint('UserService: Logged in flag set but token missing. Logging out.');
+          await logout();
+        } else {
+          final email = prefs.getString('user_email') ?? '';
+          final roleStr = prefs.getString('user_role') ?? 'customer';
+          
+          currentUser.value = UserModel(
+            id: prefs.getString('user_id') ?? const Uuid().v4(),
+            name: prefs.getString('user_name') ?? 'User',
+            email: email,
+            phone: prefs.getString('user_phone') ?? '+251900000000',
+            role: roleStr == 'admin' ? UserRole.admin : UserRole.customer,
+            profileImage: prefs.getString('user_profile_image'),
+          );
+          
+          // Pre-fetch data if logged in
+          ProductService().fetchProducts();
+          BannerService().fetchBanners();
+        }
       } else {
-        final email = prefs.getString('user_email') ?? '';
-        final roleStr = prefs.getString('user_role') ?? 'customer';
-        
-        currentUser.value = UserModel(
-          id: prefs.getString('user_id') ?? const Uuid().v4(),
-          name: prefs.getString('user_name') ?? 'User',
-          email: email,
-          phone: prefs.getString('user_phone') ?? '+251900000000',
-          role: roleStr == 'admin' ? UserRole.admin : UserRole.customer,
-          profileImage: prefs.getString('user_profile_image'),
-        );
+        // Even if not logged in, fetch public data
+        ProductService().fetchProducts();
+        BannerService().fetchBanners();
       }
+    } catch (e) {
+      debugPrint('UserService Init Error: $e');
+    } finally {
+      isLoading.value = false;
     }
-    isLoading.value = false;
   }
 
   Future<String?> register(String name, String email, String password, {String? phone}) async {
