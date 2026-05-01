@@ -22,7 +22,7 @@ class ApiClient {
   // Toggle this to switch between local and remote
   static const bool _useLocalBackend = false; 
   
-  static const String _remoteUrl = 'https://hameshop-backend-8.onrender.com/api';
+  static const String _remoteUrl = 'https://hameshop-backend-9.onrender.com/api';
   static const String _localUrl = kIsWeb ? 'http://localhost:5000/api' : 'http://10.198.69.82:5000/api';
   
   static String get baseUrl => _useLocalBackend ? _localUrl : _remoteUrl;
